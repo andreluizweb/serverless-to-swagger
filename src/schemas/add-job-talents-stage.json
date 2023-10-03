@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "jobTalents",
+    "stageId"
+  ],
+  "properties": {
+    "genericComment": {
+      "type": "string"
+    },
+    "jobTalents": {
+      "type": "array",
+      "required": [
+        "id"
+      ],
+      "items": {
+        "type": "object",
+        "required": [ 
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "stageId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

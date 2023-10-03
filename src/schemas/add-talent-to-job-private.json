@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["source"],
+  "properties": {
+    "stageId": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "originId": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "talent": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "contactMethod": {
+          "type": "string"
+        },
+        "email": {
+          "format": "email",
+          "type": "string"
+        },
+        "headline": {
+          "type": "string"
+        },
+        "linkedinUsername": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "originId": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "picture": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ACTIVE",
+            "ACTIVE_MULTIPLE",
+            "APPROACHED",
+            "AVAILABLE",
+            "BLOCKED",
+            "HIRED",
+            "UNKNOWN"
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "talentId": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "fileCategory", "name"],
+        "properties": {
+          "fileCategory": {
+            "type": "string",
+            "enum": ["resumes"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "membership": {
+      "type": "object",
+      "required": ["email", "name"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "format": "email",
+          "type": "string"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

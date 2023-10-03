@@ -1,0 +1,54 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["name", "startDateTime", "endDateTime", "userEmail", "guests", "hasCallLink"],
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "startDateTime": {
+      "type": "string"
+    },
+    "endDateTime": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "location": {
+      "type": "string"
+    },
+    "userEmail": {
+      "type": "string"
+    },
+    "guests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "originId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["invited", "confirmed", "denied"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["talent", "user", "external"]
+          }
+        }
+      }
+    },
+    "hasCallLink": {
+      "type": "boolean"
+    }
+  },
+  "additionalProperties": false
+}

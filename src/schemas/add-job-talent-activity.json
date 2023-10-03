@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "userNotes": {
+      "type": "string"
+    },
+    "mentionedUsers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "userId",
+          "userName"
+        ],
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "userName": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "setedStageId": {
+      "type": "string"
+    },
+    "setedStatus": {
+      "type": "string",
+      "enum": [
+        "active",
+        "declined",
+        "rejected"
+      ]
+    },
+    "statusReason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

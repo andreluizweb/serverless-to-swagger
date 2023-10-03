@@ -3,7 +3,7 @@
     "js-yaml": "^4.1.0"
   },
   "name": "serverless-to-swagger",
-  "version": "1.0.0",
+  "version": "1.2.4",
   "description": "Reads the serverless.yml file and write a Swagger JSON",
   "main": "index.js",
   "devDependencies": {

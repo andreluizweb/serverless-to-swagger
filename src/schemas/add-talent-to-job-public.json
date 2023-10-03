@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["email", "name", "phone"],
+  "properties": {
+    "email": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "linkedinUsername": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "fileCategory": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "targetSalary": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["CLT", "PJ"]
+        },
+        "currency": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "referralCode": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    },
+    "diversityFormQuestionResponses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question"],
+        "properties": {
+          "question": {
+            "type": "object",
+            "required": [
+              "answerType",
+              "createdAt",
+              "diversityGroup",
+              "id",
+              "order",
+              "question",
+              "title",
+              "updatedAt"
+            ],
+            "properties": {
+              "answerOptions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["order", "title"],
+                  "properties": {
+                    "description": {
+                      "type": "string"
+                    },
+                    "order": {
+                      "type": "number"
+                    },
+                    "subQuestionIds": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "colourAndEthnicity",
+                          "diversityGroup",
+                          "genderIdentity",
+                          "peopleWithDisability",
+                          "peopleWithDisabilityAID",
+                          "peopleWithDisabilityCID",
+                          "peopleWithDisabilityMedicalReport",
+                          "sexualOrientation"
+                        ]
+                      }
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "answerType": {
+                "type": "string",
+                "enum": ["fileUpload", "longText", "multipleChoice", "singleChoice", "shortText"]
+              },
+              "description": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "enum": [
+                  "colourAndEthnicity",
+                  "diversityGroup",
+                  "genderIdentity",
+                  "peopleWithDisability",
+                  "peopleWithDisabilityAID",
+                  "peopleWithDisabilityCID",
+                  "peopleWithDisabilityMedicalReport",
+                  "sexualOrientation"
+                ]
+              },
+              "isSubQuestionOf": {
+                "type": "string",
+                "enum": [
+                  "colourAndEthnicity",
+                  "diversityGroup",
+                  "genderIdentity",
+                  "peopleWithDisability",
+                  "peopleWithDisabilityAID",
+                  "peopleWithDisabilityCID",
+                  "peopleWithDisabilityMedicalReport",
+                  "sexualOrientation"
+                ]
+              },
+              "order": {
+                "type": "number"
+              },
+              "subTitle": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "diversityGroup": {
+                "type": "string",
+                "enum": [
+                  "colourAndEthnicity",
+                  "diversityGroup",
+                  "genderIdentity",
+                  "peopleWithDisability",
+                  "sexualOrientation"
+                ]
+              }
+            }
+          },
+          "answer": {
+            "type": ["object", "array"]
+          }
+        }
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

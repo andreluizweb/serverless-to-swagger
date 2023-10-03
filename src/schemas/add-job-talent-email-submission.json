@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": [
+    "body",
+    "from",
+    "includeSignature",
+    "jobTalentIds",
+    "provider",
+    "subject",
+    "templateId"
+  ],
+  "properties": {
+    "body": {
+      "type": "string"
+    },
+    "bodyPreview": {
+      "type": "string"
+    },
+    "from": {
+      "type": "string"
+    },
+    "includeSignature": {
+      "type": "boolean"
+    },
+    "jobTalentIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provider": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "templateId": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

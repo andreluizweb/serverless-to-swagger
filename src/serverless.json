@@ -598,12 +598,16 @@
   "functions": {
     "addJobTalentActivity": {
       "handler": "src/handlers/jobTalentActivities.addJobTalentActivity",
+      "tags": {
+        "category": "jobTalent Activity"
+      },
       "events": [
         {
           "http": {
             "path": "/talents/{id}/activities",
             "method": "post",
             "cors": true,
+            "private": true,
             "request": {
               "parameters": {
                 "paths": {
@@ -623,6 +627,9 @@
     },
     "addJobTalentActivityPrivate": {
       "handler": "src/handlers/jobTalentActivities.addJobTalentActivityPrivate",
+      "tags": {
+        "category": "jobTalent Activity"
+      },
       "events": [
         {
           "http": {
@@ -644,6 +651,9 @@
     },
     "addJobTalentsEmailSubmissions": {
       "handler": "src/handlers/jobTalentEmailSubmissions.addJobTalentsEmailSubmissions",
+      "tags": {
+        "category": "jobTalent Email Submission"
+      },
       "events": [
         {
           "http": {
@@ -666,6 +676,9 @@
     },
     "addJobTalentsStage": {
       "handler": "src/handlers/jobTalentStages.addJobTalentsStage",
+      "tags": {
+        "category": "jobTalent Stage"
+      },
       "timeout": 30,
       "events": [
         {
@@ -682,6 +695,9 @@
     },
     "addJobTalentStage": {
       "handler": "src/handlers/jobTalentStages.addJobTalentStage",
+      "tags": {
+        "category": "jobTalent Stage"
+      },
       "events": [
         {
           "http": {
@@ -704,6 +720,9 @@
     },
     "addJobTalentStagePrivate": {
       "handler": "src/handlers/jobTalentStages.addJobTalentStagePrivate",
+      "tags": {
+        "category": "jobTalent Stage"
+      },
       "events": [
         {
           "http": {
@@ -728,6 +747,9 @@
     },
     "addJobTalentStatus": {
       "handler": "src/handlers/jobTalentStatuses.addJobTalentStatus",
+      "tags": {
+        "category": "jobTalent Status"
+      },
       "events": [
         {
           "http": {
@@ -750,6 +772,9 @@
     },
     "addJobTalentStatusPrivate": {
       "handler": "src/handlers/jobTalentStatuses.addJobTalentStatusPrivate",
+      "tags": {
+        "category": "jobTalent Status"
+      },
       "events": [
         {
           "http": {
@@ -771,6 +796,9 @@
     },
     "addJobTalentsStatus": {
       "handler": "src/handlers/jobTalentStatuses.addJobTalentsStatus",
+      "tags": {
+        "category": "jobTalent Status"
+      },
       "timeout": 30,
       "events": [
         {
@@ -787,6 +815,9 @@
     },
     "addTalentsToJob": {
       "handler": "src/handlers/jobTalents.addTalentsToJob",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -809,6 +840,9 @@
     },
     "addTalentsToJobPrivate": {
       "handler": "src/handlers/jobTalents.addTalentsToJobPrivate",
+      "tags": {
+        "category": "jobTalent"
+      },
       "timeout": 30,
       "events": [
         {
@@ -834,6 +868,9 @@
     },
     "addTalentToJob": {
       "handler": "src/handlers/jobTalents.addTalentToJob",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -856,6 +893,9 @@
     },
     "addTalentToJobPrivate": {
       "handler": "src/handlers/jobTalents.addTalentToJobPrivate",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -881,6 +921,9 @@
     "addTalentToJobPublic": {
       "timeout": 30,
       "handler": "src/handlers/jobTalents.addTalentToJobPublic",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -919,6 +962,9 @@
     },
     "getCountJobTalentsPrivate": {
       "handler": "src/handlers/jobTalents.getCountJobTalentsPrivate",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -939,6 +985,9 @@
     },
     "getDiversityFileSignedURL": {
       "handler": "src/handlers/diversity.getDiversityFileSignedURL",
+      "tags": {
+        "category": "diversity"
+      },
       "events": [
         {
           "http": {
@@ -951,6 +1000,9 @@
     },
     "getJobTalent": {
       "handler": "src/handlers/jobTalents.getJobTalent",
+      "tags": {
+        "category": "jobTalent"
+      },
       "events": [
         {
           "http": {
@@ -971,6 +1023,9 @@
     },
     "getJobTalentActivities": {
       "handler": "src/handlers/jobTalentActivities.getJobTalentActivities",
+      "tags": {
+        "category": "jobTalent Activity"
+      },
       "events": [
         {
           "http": {
@@ -1867,18 +1922,6 @@
                 "paths": {
                   "id": true
                 }
-              }
-            }
-          }
-        },
-        {
-          "http": {
-            "path": "/appointments/availability/check",
-            "method": "post",
-            "cors": true,
-            "request": {
-              "schemas": {
-                "application/json": "${file(schemas/check-guest-availability.json)}"
               }
             }
           }

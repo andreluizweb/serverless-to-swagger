@@ -362,11 +362,14 @@ custom:
 functions:
   addJobTalentActivity:
     handler: src/handlers/jobTalentActivities.addJobTalentActivity
+    tags:
+      category: jobTalent Activity
     events:
       - http:
           path: /talents/{id}/activities
           method: post
           cors: true
+          private: true
           request:
             parameters:
               paths:
@@ -377,6 +380,8 @@ functions:
                 schema: ${file(schemas/add-job-talent-activity.json)}
   addJobTalentActivityPrivate:
     handler: src/handlers/jobTalentActivities.addJobTalentActivityPrivate
+    tags:
+      category: jobTalent Activity
     events:
       - http:
           path: /private/{tenantId}/talents/{id}/activities
@@ -390,6 +395,8 @@ functions:
                 tenantId: true
   addJobTalentsEmailSubmissions:
     handler: src/handlers/jobTalentEmailSubmissions.addJobTalentsEmailSubmissions
+    tags:
+      category: jobTalent Email Submission
     events:
       - http:
           path: /{id}/talents/emails
@@ -403,6 +410,8 @@ functions:
               application/json: ${file(schemas/add-job-talent-email-submission.json)}
   addJobTalentsStage:
     handler: src/handlers/jobTalentStages.addJobTalentsStage
+    tags:
+      category: jobTalent Stage
     timeout: 30
     events:
       - http:
@@ -413,6 +422,8 @@ functions:
             parameters:
   addJobTalentStage:
     handler: src/handlers/jobTalentStages.addJobTalentStage
+    tags:
+      category: jobTalent Stage
     events:
       - http:
           path: /talents/{id}/stages
@@ -426,6 +437,8 @@ functions:
               application/json: ${file(schemas/add-job-talent-stage.json)}
   addJobTalentStagePrivate:
     handler: src/handlers/jobTalentStages.addJobTalentStagePrivate
+    tags:
+      category: jobTalent Stage
     events:
       - http:
           path: /private/talents/{tenantId}/{id}/stages
@@ -441,6 +454,8 @@ functions:
               application/json: ${file(schemas/add-job-talent-stage.json)}
   addJobTalentStatus:
     handler: src/handlers/jobTalentStatuses.addJobTalentStatus
+    tags: 
+      category: jobTalent Status
     events:
       - http:
           path: /talents/{id}/statuses
@@ -454,6 +469,8 @@ functions:
               application/json: ${file(schemas/add-job-talent-status.json)}
   addJobTalentStatusPrivate:
     handler: src/handlers/jobTalentStatuses.addJobTalentStatusPrivate
+    tags:
+      category: jobTalent Status
     events:
       - http:
           path: /private/talents/{tenantId}/{id}/statuses
@@ -467,6 +484,8 @@ functions:
                 tenantId: true
   addJobTalentsStatus:
     handler: src/handlers/jobTalentStatuses.addJobTalentsStatus
+    tags: 
+      category: jobTalent Status
     timeout: 30
     events:
       - http:
@@ -477,6 +496,8 @@ functions:
             parameters:
   addTalentsToJob:
     handler: src/handlers/jobTalents.addTalentsToJob
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /{id}/talents/batch
@@ -490,6 +511,8 @@ functions:
               application/json: ${file(schemas/add-talents-to-job.json)}
   addTalentsToJobPrivate:
     handler: src/handlers/jobTalents.addTalentsToJobPrivate
+    tags: 
+      category: jobTalent
     timeout: 30
     events:
       - http:
@@ -506,6 +529,8 @@ functions:
               application/json: ${file(schemas/add-talents-to-job.json)}
   addTalentToJob:
     handler: src/handlers/jobTalents.addTalentToJob
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /{id}/talents
@@ -519,6 +544,8 @@ functions:
               application/json: ${file(schemas/add-talent-to-job.json)}
   addTalentToJobPrivate:
     handler: src/handlers/jobTalents.addTalentToJobPrivate
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /private/{tenantId}/{id}/talents
@@ -535,6 +562,8 @@ functions:
   addTalentToJobPublic:
     timeout: 30
     handler: src/handlers/jobTalents.addTalentToJobPublic
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /public/{id}/talents
@@ -561,6 +590,8 @@ functions:
               application/json: ${file(schemas/add-talent-to-job-public.json)}
   getCountJobTalentsPrivate:
     handler: src/handlers/jobTalents.getCountJobTalentsPrivate
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /private/{tenantId}/talents/count
@@ -573,6 +604,8 @@ functions:
                 tenantId: true
   getDiversityFileSignedURL:
     handler: src/handlers/diversity.getDiversityFileSignedURL
+    tags: 
+      category: diversity
     events:
       - http:
           path: /diversity/files/signature/{name}
@@ -580,6 +613,8 @@ functions:
           cors: true
   getJobTalent:
     handler: src/handlers/jobTalents.getJobTalent
+    tags: 
+      category: jobTalent
     events:
       - http:
           path: /{id}/talents/{talentId}
@@ -592,6 +627,8 @@ functions:
                 talentId: true
   getJobTalentActivities:
     handler: src/handlers/jobTalentActivities.getJobTalentActivities
+    tags: 
+      category: jobTalent Activity
     events:
       - http:
           path: /talents/{id}/activities

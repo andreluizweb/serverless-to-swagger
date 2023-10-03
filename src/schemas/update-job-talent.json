@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "originId": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "stageChangeComment": {
+      "type": "string"
+    },
+    "stageId": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "feedback": {
+      "type": "object",
+      "properties": {
+        "channel": {
+          "type": "string",
+          "enum": ["call", "email", "external_email", "linkedin", "telegram", "whatsapp", "other"]
+        },
+        "details": {
+          "type": "string"
+        },
+        "emailSubmissionId": {
+          "type": "string"
+        },
+        "feedbackAt": {
+          "type": "string"
+        }
+      }
+    },
+    "hiredAt": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "fileCategory", "name"],
+        "properties": {
+          "fileCategory": {
+            "type": "string",
+            "enum": ["resumes", "job-talent-general-files"]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "targetSalary": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["PJ", "CLT"]
+        },
+        "value": {
+          "type": "number"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "salaryAgreed": {
+      "type": "object",
+      "properties": {
+        "currency": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["PJ", "CLT"]
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
