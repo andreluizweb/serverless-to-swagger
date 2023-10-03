@@ -1,0 +1,1892 @@
+{
+  "service": "job-talents-svc",
+  "configValidationMode": "error",
+  "frameworkVersion": "3",
+  "plugins": [
+    "serverless-add-api-key",
+    "serverless-domain-manager",
+    "serverless-esbuild",
+    "serverless-offline",
+    "serverless-plugin-datadog"
+  ],
+  "provider": {
+    "name": "aws",
+    "runtime": "nodejs16.x",
+    "region": "us-east-1",
+    "stage": "${opt:stage,'dev'}",
+    "tracing": {
+      "apiGateway": true,
+      "lambda": true
+    },
+    "versionFunctions": false,
+    "apiGateway": {
+      "shouldStartNameWithService": true,
+      "metrics": true
+    },
+    "iam": {
+      "role": {
+        "statements": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "dynamodb:BatchGetItem",
+              "dynamodb:DeleteItem",
+              "dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:Query",
+              "dynamodb:UpdateItem"
+            ],
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Action": [
+              "apigateway:GET",
+              "events:PutEvents",
+              "lambda:InvokeFunction",
+              "secretsmanager:GetSecretValue",
+              "sqs:SendMessage"
+            ],
+            "Resource": "*"
+          }
+        ]
+      }
+    },
+    "environment": {
+      "STAGE": "${self:provider.stage}",
+      "JOB_TALENTS_EB": "${self:custom.jobTalentsEb.name}",
+      "JOB_TALENTS_TABLE": "${self:custom.jobTalentsTable}",
+      "JOB_TALENT_STAGE_HISTORY_TABLE": "${self:custom.jobTalentStageHistoryTable}",
+      "JOB_TALENT_ACTIVITY_HISTORY_TABLE": "${self:custom.jobTalentActivityHistoryTable}",
+      "JOB_TALENT_STATUS_HISTORY_TABLE": "${self:custom.jobTalentStatusHistoryTable}",
+      "EMAIL_SUBMISSION_QUEUE": "${self:custom.emailSubmissionQueue}",
+      "S3_BUCKET_JOB_TALENT_GENERAL_FILES": "${self:custom.s3.bucket-job-talent-gerenal-files}",
+      "DATADOG_API_KEY": "4a970df7-d386-4628-bcc8-eebdfcecf179",
+      "IMPORT_JOB_TALENT_QUEUE": "${self:custom.importJobTalentQueue}",
+      "IMPORT_JOB_TALENT_DLQ_QUEUE": "${self:custom.importJobTalentDlqQueue}",
+      "NODE_OPTIONS": "--enable-source-maps",
+      "JOB_TALENT_APPOINTMENTS_TABLE": "${self:custom.jobTalentAppointmentsTable}"
+    }
+  },
+  "resources": {
+    "Resources": {
+      "ApiGatewayRestApi": {
+        "Type": "AWS::ApiGateway::RestApi"
+      },
+      "BadRequestBody": {
+        "Type": "AWS::ApiGateway::GatewayResponse",
+        "Properties": {
+          "ResponseType": "BAD_REQUEST_BODY",
+          "ResponseTemplates": {
+            "application/json": "{\"message\": \"$context.error.validationErrorString\"}"
+          },
+          "RestApiId": {
+            "Ref": "ApiGatewayRestApi"
+          },
+          "StatusCode": "400"
+        }
+      },
+      "UploadBucket": {
+        "Type": "AWS::S3::Bucket",
+        "Properties": {
+          "BucketName": "${self:custom.s3.bucket-job-talent-gerenal-files}",
+          "AccessControl": "Private",
+          "CorsConfiguration": {
+            "CorsRules": [
+              {
+                "AllowedMethods": [
+                  "GET",
+                  "PUT",
+                  "POST",
+                  "HEAD"
+                ],
+                "AllowedOrigins": [
+                  "*"
+                ],
+                "AllowedHeaders": [
+                  "*"
+                ],
+                "MaxAge": 3000
+              }
+            ]
+          }
+        }
+      },
+      "JobTalentActivityHistory": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "${self:custom.jobTalentActivityHistoryTable}",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "tenantId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "talentId",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "tenantId",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "id",
+              "KeyType": "RANGE"
+            }
+          ],
+          "LocalSecondaryIndexes": [
+            {
+              "IndexName": "talentIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "talentId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST"
+        }
+      },
+      "JobTalentsTable": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "${self:custom.jobTalentsTable}",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "tenantId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "jobId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "originId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "status",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "talentId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "source",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "tenantId",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "id",
+              "KeyType": "RANGE"
+            }
+          ],
+          "LocalSecondaryIndexes": [
+            {
+              "IndexName": "jobIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "jobId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "originIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "originId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "statusIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "status",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "talentIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "talentId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "GlobalSecondaryIndexes": [
+            {
+              "IndexName": "sourceIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "source",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST"
+        }
+      },
+      "JobTalentStageHistory": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "${self:custom.jobTalentStageHistoryTable}",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "tenantId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "talentId",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "tenantId",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "id",
+              "KeyType": "RANGE"
+            }
+          ],
+          "LocalSecondaryIndexes": [
+            {
+              "IndexName": "talentIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "talentId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST"
+        }
+      },
+      "JobTalentStatusHistory": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "${self:custom.jobTalentStatusHistoryTable}",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "tenantId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "talentId",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "tenantId",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "id",
+              "KeyType": "RANGE"
+            }
+          ],
+          "LocalSecondaryIndexes": [
+            {
+              "IndexName": "talentIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "talentId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST"
+        }
+      },
+      "JobTalentsEb": {
+        "Type": "AWS::Events::EventBus",
+        "Properties": {
+          "Name": "${self:custom.jobTalentsEb.name}"
+        }
+      },
+      "ImportJobTalntQueue": {
+        "Type": "AWS::SQS::Queue",
+        "Properties": {
+          "QueueName": "importJobTalent-${self:provider.stage}",
+          "RedrivePolicy": {
+            "deadLetterTargetArn": {
+              "Fn::GetAtt": [
+                "ImportJobTalentDLQ",
+                "Arn"
+              ]
+            },
+            "maxReceiveCount": 3
+          }
+        }
+      },
+      "ImportJobTalentDLQ": {
+        "Type": "AWS::SQS::Queue",
+        "Properties": {
+          "QueueName": "importJobTalent-dlq-${self:provider.stage}"
+        }
+      },
+      "JobTalentAppointmentsTable": {
+        "Type": "AWS::DynamoDB::Table",
+        "Properties": {
+          "TableName": "${self:custom.jobTalentAppointmentsTable}",
+          "AttributeDefinitions": [
+            {
+              "AttributeName": "tenantId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "id",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "jobId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "jobTalentId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "userId",
+              "AttributeType": "S"
+            },
+            {
+              "AttributeName": "userEmail",
+              "AttributeType": "S"
+            }
+          ],
+          "KeySchema": [
+            {
+              "AttributeName": "tenantId",
+              "KeyType": "HASH"
+            },
+            {
+              "AttributeName": "id",
+              "KeyType": "RANGE"
+            }
+          ],
+          "LocalSecondaryIndexes": [
+            {
+              "IndexName": "jobIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "jobId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "userIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "userId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "jobTalentIdIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "jobTalentId",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            },
+            {
+              "IndexName": "userEmailIndex",
+              "KeySchema": [
+                {
+                  "AttributeName": "tenantId",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "userEmail",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "Projection": {
+                "ProjectionType": "ALL"
+              }
+            }
+          ],
+          "BillingMode": "PAY_PER_REQUEST"
+        }
+      }
+    }
+  },
+  "custom": {
+    "accountId": 971242155661,
+    "eventBusPrefix": "arn:aws:events:${self:provider.region}:${self:custom.accountId}:event-bus",
+    "datadog": {
+      "site": "datadoghq.com",
+      "apiKeySecretArn": "arn:aws:secretsmanager:us-east-1:971242155661:secret:datadog-key-8aVN8C",
+      "enabled": false
+    },
+    "apiKeys": [
+      {
+        "name": "${self:provider.stage}-integration",
+        "usagePlan": {
+          "name": "${self:provider.stage}-integration-plan"
+        }
+      }
+    ],
+    "domains": {
+      "dev": "api-dev.inhire.app",
+      "prod": "api.inhire.app"
+    },
+    "customDomain": {
+      "domainName": "${self:custom.domains.${self:provider.stage}}",
+      "basePath": "job-talents",
+      "stage": "${self:provider.stage}",
+      "createRoute53Record": true
+    },
+    "esbuild": {
+      "minify": true,
+      "sourcemap": true
+    },
+    "serverless-offline": {
+      "httpPort": 4080,
+      "lambdaPort": 4081,
+      "websocketPort": 4082
+    },
+    "commsEb": {
+      "name": "comms-${self:provider.stage}",
+      "arn": "${self:custom.eventBusPrefix}/${self:custom.commsEb.name}"
+    },
+    "integrationsEb": {
+      "name": "integrations-${self:provider.stage}",
+      "arn": "${self:custom.eventBusPrefix}/${self:custom.integrationsEb.name}"
+    },
+    "jobTalentsEb": {
+      "name": "jobTalents-${self:provider.stage}",
+      "arn": "${self:custom.eventBusPrefix}/${self:custom.jobTalentsEb.name}"
+    },
+    "jobsEb": {
+      "name": "jobs-${self:provider.stage}",
+      "arn": "${self:custom.eventBusPrefix}/${self:custom.jobsEb.name}"
+    },
+    "talentsEb": {
+      "name": "talents-${self:provider.stage}",
+      "arn": "${self:custom.eventBusPrefix}/${self:custom.talentsEb.name}"
+    },
+    "jobTalentsTable": "jobTalents-${self:provider.stage}",
+    "jobTalentStageHistoryTable": "jobTalentStageHistory-${self:provider.stage}",
+    "jobTalentStatusHistoryTable": "jobTalentStatusHistory-${self:provider.stage}",
+    "jobTalentActivityHistoryTable": "jobTalentActivityHistory-${self:provider.stage}",
+    "jobTalentAppointmentsTable": "jobTalentAppointments-${self:provider.stage}",
+    "emailSubmissionQueue": "https://sqs.${self:provider.region}.amazonaws.com/${self:custom.accountId}/emailSubmission-${self:provider.stage}",
+    "s3": {
+      "bucket-job-talent-gerenal-files": "private-job-talent-general-files-${self:provider.stage}.inhire.app"
+    },
+    "importJobTalentQueue": "https://sqs.${self:provider.region}.amazonaws.com/${self:custom.accountId}/importJobTalent-${self:provider.stage}",
+    "importJobTalentDlqQueue": "https://sqs.${self:provider.region}.amazonaws.com/${self:custom.accountId}/importJobTalent-dlq-${self:provider.stage}"
+  },
+  "functions": {
+    "addJobTalentActivity": {
+      "handler": "src/handlers/jobTalentActivities.addJobTalentActivity",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/activities",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": {
+                  "name": "AddTalentJobActivity",
+                  "schema": "${file(schemas/add-job-talent-activity.json)}"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentActivityPrivate": {
+      "handler": "src/handlers/jobTalentActivities.addJobTalentActivityPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/talents/{id}/activities",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentsEmailSubmissions": {
+      "handler": "src/handlers/jobTalentEmailSubmissions.addJobTalentsEmailSubmissions",
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/emails",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-job-talent-email-submission.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentsStage": {
+      "handler": "src/handlers/jobTalentStages.addJobTalentsStage",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/talents/stages/batch",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": null
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentStage": {
+      "handler": "src/handlers/jobTalentStages.addJobTalentStage",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/stages",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-job-talent-stage.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentStagePrivate": {
+      "handler": "src/handlers/jobTalentStages.addJobTalentStagePrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/talents/{tenantId}/{id}/stages",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-job-talent-stage.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentStatus": {
+      "handler": "src/handlers/jobTalentStatuses.addJobTalentStatus",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/statuses",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-job-talent-status.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentStatusPrivate": {
+      "handler": "src/handlers/jobTalentStatuses.addJobTalentStatusPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/talents/{tenantId}/{id}/statuses",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addJobTalentsStatus": {
+      "handler": "src/handlers/jobTalentStatuses.addJobTalentsStatus",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/talents/statuses/batch",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": null
+            }
+          }
+        }
+      ]
+    },
+    "addTalentsToJob": {
+      "handler": "src/handlers/jobTalents.addTalentsToJob",
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/batch",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-talents-to-job.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addTalentsToJobPrivate": {
+      "handler": "src/handlers/jobTalents.addTalentsToJobPrivate",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/{id}/talents/batch",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-talents-to-job.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addTalentToJob": {
+      "handler": "src/handlers/jobTalents.addTalentToJob",
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-talent-to-job.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addTalentToJobPrivate": {
+      "handler": "src/handlers/jobTalents.addTalentToJobPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/{id}/talents",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-talent-to-job-private.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "addTalentToJobPublic": {
+      "timeout": 30,
+      "handler": "src/handlers/jobTalents.addTalentToJobPublic",
+      "events": [
+        {
+          "http": {
+            "path": "/public/{id}/talents",
+            "method": "post",
+            "cors": {
+              "origin": "*",
+              "headers": [
+                "Content-Type",
+                "Authorization",
+                "X-Amz-Date",
+                "X-Api-Key",
+                "X-Amz-Security-Token",
+                "X-Amz-User-Agent",
+                "X-Recaptcha",
+                "X-Tenant"
+              ]
+            },
+            "request": {
+              "parameters": {
+                "headers": {
+                  "X-Recaptcha": true,
+                  "X-Tenant": true
+                },
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/add-talent-to-job-public.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getCountJobTalentsPrivate": {
+      "handler": "src/handlers/jobTalents.getCountJobTalentsPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/talents/count",
+            "method": "post",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getDiversityFileSignedURL": {
+      "handler": "src/handlers/diversity.getDiversityFileSignedURL",
+      "events": [
+        {
+          "http": {
+            "path": "/diversity/files/signature/{name}",
+            "method": "get",
+            "cors": true
+          }
+        }
+      ]
+    },
+    "getJobTalent": {
+      "handler": "src/handlers/jobTalents.getJobTalent",
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/{talentId}",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "talentId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentActivities": {
+      "handler": "src/handlers/jobTalentActivities.getJobTalentActivities",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/activities",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentPrivate": {
+      "handler": "src/handlers/jobTalents.getJobTalentPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/{id}/talents/{talentId}",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "talentId": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalents": {
+      "handler": "src/handlers/jobTalents.getJobTalents",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsLean": {
+      "handler": "src/handlers/jobTalents.getJobTalentsLean",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/lean",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsPaginated": {
+      "handler": "src/handlers/jobTalents.getJobTalentsPaginated",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/paginated",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsPaginatedLean": {
+      "handler": "src/handlers/jobTalents.getJobTalentsPaginatedLean",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/talents/paginated/lean",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsPrivate": {
+      "handler": "src/handlers/jobTalents.getJobTalentsPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/{id}/talents",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsDataByTalentIdsPrivate": {
+      "handler": "src/handlers/jobTalents.getJobTalentsDataByTalentIdsPrivate",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/batchByTalentIds",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentsDataByIdsPrivate": {
+      "handler": "src/handlers/jobTalents.getJobTalentsDataByIdsPrivate",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/batchById",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentStages": {
+      "handler": "src/handlers/jobTalentStages.getJobTalentStages",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/stages",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentTimeline": {
+      "handler": "src/handlers/jobTalentStages.getJobTalentTimeline",
+      "events": [
+        {
+          "http": {
+            "path": "/{id}/timeline",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getJobTalentStatuses": {
+      "handler": "src/handlers/jobTalentStatuses.getJobTalentStatuses",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/statuses",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getTalentJobs": {
+      "handler": "src/handlers/jobTalents.getTalentJobs",
+      "events": [
+        {
+          "http": {
+            "path": "/talent/{talentId}",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "talentId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getTalentJobsPrivate": {
+      "handler": "src/handlers/jobTalents.getTalentJobsPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/talent/{talentId}",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "talentId": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getTalentsJobsPrivate": {
+      "handler": "src/handlers/jobTalents.getTalentsJobsPrivate",
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/talents",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "http": {
+            "path": "/private/{tenantId}/talents/source/{source}",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "source": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "http": {
+            "path": "/private/{tenantId}/talents/jobId/{jobId}",
+            "method": "get",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "jobId": true,
+                  "tenantId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "handleEmailSent": {
+      "handler": "src/handlers/events.handleEmailSent",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.commsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "COMMS_EMAIL_SENT"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleFeedbackEmailSent": {
+      "handler": "src/handlers/events.handleFeedbackEmailSent",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.commsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "COMMS_EMAIL_SENT"
+              ],
+              "detail": {
+                "body": {
+                  "type": [
+                    "DISAPPROVAL"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "handleIntegrationApplicationAdded": {
+      "handler": "src/handlers/events.handleIntegrationApplicationAdded",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_APPLICATION_ADDED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleIntegrationJobTalentHired": {
+      "handler": "src/handlers/events.handleIntegrationJobTalentHired",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_JOB_TALENT_HIRED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleIntegrationJobTalentStageUpdated": {
+      "handler": "src/handlers/events.handleIntegrationJobTalentStageUpdated",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_JOB_TALENT_STAGE_UPDATED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleJobRemoved": {
+      "handler": "src/handlers/events.handleJobRemoved",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.jobsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "JOB_REMOVED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleJobTalentRemoved": {
+      "handler": "src/handlers/events.handleJobTalentRemoved",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.jobTalentsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "JOB_TALENT_REMOVED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleTalentDeclined": {
+      "handler": "src/handlers/events.handleTalentDeclined",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_JOB_TALENT_DECLINED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleTalentRemoved": {
+      "handler": "src/handlers/events.handleTalentRemoved",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.talentsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "TALENT_REMOVED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleTalentRejected": {
+      "handler": "src/handlers/events.handleTalentRejected",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_JOB_TALENT_REJECTED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "handleIntegrationJobBoardEventReceived": {
+      "handler": "src/handlers/events.handleIntegrationJobBoardEventReceived",
+      "events": [
+        {
+          "eventBridge": {
+            "eventBus": "${self:custom.integrationsEb.arn}",
+            "pattern": {
+              "detail-type": [
+                "INTEGRATION_JOB_BOARD_EVENT_RECEIVED"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "migrateJobTalent": {
+      "handler": "src/handlers/jobTalents.migrateJobTalent",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/migrate/{id}",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/migrate-job-talent.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "removeJobTalentActivity": {
+      "handler": "src/handlers/jobTalentActivities.removeJobTalentActivity",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/activities/{id}",
+            "method": "delete",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "removeJobTalentStatus": {
+      "handler": "src/handlers/jobTalentStatuses.removeJobTalentStatus",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/statuses/{id}",
+            "method": "delete",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "removeTalentFromJob": {
+      "handler": "src/handlers/jobTalents.removeTalentFromJob",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}",
+            "method": "delete",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateJobTalent": {
+      "handler": "src/handlers/jobTalents.updateJobTalent",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/update-job-talent.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "removeFileFromJobTalent": {
+      "handler": "src/handlers/jobTalents.removeFileFromJobTalent",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/{id}/files/{fileId}",
+            "method": "delete",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true,
+                  "fileId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateJobTalentActivity": {
+      "handler": "src/handlers/jobTalentActivities.updateJobTalentActivity",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/activities/{id}",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": {
+                  "name": "UpdateJobTalentActivity",
+                  "schema": "${file(schemas/update-job-talent-activity.json)}"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateJobTalentStage": {
+      "handler": "src/handlers/jobTalentStages.updateJobTalentStage",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/stages/{id}",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/update-job-talent-stage.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateJobTalentStatus": {
+      "handler": "src/handlers/jobTalentStatuses.updateJobTalentStatus",
+      "events": [
+        {
+          "http": {
+            "path": "/talents/statuses/{id}",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/update-job-talent-status.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getReprovalEmailSuggestion": {
+      "timeout": 20,
+      "handler": "src/handlers/jobTalentStatuses.getReprovalEmailSuggestion",
+      "events": [
+        {
+          "http": {
+            "path": "/reproval/suggestion/{jobTalentId}",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "headers": {
+                  "Authorization": true
+                },
+                "paths": {
+                  "jobTalentId": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/get-reproval-suggestion.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateJobTalentsStageFromAutomation": {
+      "handler": "src/handlers/jobTalents.updateJobTalentsStageFromAutomation",
+      "timeout": 20,
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/jobTalents/{jobTalentId}/update/stage/{stageId}/automation",
+            "method": "patch",
+            "cors": true,
+            "private": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true,
+                  "jobTalentId": true,
+                  "stageId": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/update-job-talent-stage-from-automation.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "importJobTalentsFromQueue": {
+      "handler": "src/handlers/jobTalents.importJobTalentsFromQueue",
+      "events": [
+        {
+          "sqs": {
+            "arn": "arn:aws:sqs:${self:provider.region}:${self:custom.accountId}:importJobTalent-${self:provider.stage}",
+            "batchSize": 1,
+            "functionResponseType": "ReportBatchItemFailures",
+            "maximumBatchingWindow": 1
+          }
+        }
+      ]
+    },
+    "addJobTalentsStatusFromAutomationHandler": {
+      "handler": "src/handlers/jobTalentStatuses.addJobTalentsStatusFromAutomation",
+      "timeout": 30,
+      "events": [
+        {
+          "http": {
+            "path": "/private/{tenantId}/jobTalents/{jobTalentId}/reprove/automation",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "tenantId": true,
+                  "jobTalentId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getAppointment": {
+      "handler": "src/handlers/appointments.getAppointment",
+      "timeout": 20,
+      "events": [
+        {
+          "http": {
+            "path": "/appointments/{id}/get",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "createAppointment": {
+      "handler": "src/handlers/appointments.createAppointment",
+      "timeout": 20,
+      "events": [
+        {
+          "http": {
+            "path": "/appointments/{id}/create",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/create-appointments.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "updateAppointment": {
+      "handler": "src/handlers/appointments.updateAppointment",
+      "timeout": 20,
+      "events": [
+        {
+          "http": {
+            "path": "/appointments/{id}/patch",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              },
+              "schemas": {
+                "application/json": "${file(schemas/update-appointments.json)}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "getAppointments": {
+      "handler": "src/handlers/appointments.getAppointments",
+      "timeout": 20,
+      "description": "Get all appointments for a jobTalent",
+      "events": [
+        {
+          "http": {
+            "path": "/appointments/job-talent/{jobTalentId}",
+            "method": "get",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "jobTalentId": true
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "cancelAppointment": {
+      "handler": "src/handlers/appointments.cancelAppointment",
+      "timeout": 20,
+      "events": [
+        {
+          "http": {
+            "path": "/appointments/{id}/cancel",
+            "method": "patch",
+            "cors": true,
+            "request": {
+              "parameters": {
+                "paths": {
+                  "id": true
+                }
+              }
+            }
+          }
+        },
+        {
+          "http": {
+            "path": "/appointments/availability/check",
+            "method": "post",
+            "cors": true,
+            "request": {
+              "schemas": {
+                "application/json": "${file(schemas/check-guest-availability.json)}"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "package": {
+    "individually": true
+  }
+}
